@@ -1,0 +1,9 @@
+PyQt5>=5.15
+rawpy>=0.19            # 0.19+ : Python 3.12 휠 제공 (구 0.18.1은 3.9 전용)
+Pillow>=9.5,<11
+piexif>=1.1
+imageio>=2.28
+opencv-python>=4.8
+numpy>=1.24,<2.0       # <2.0 고정 필수 (rawpy/opencv 호환)
+psutil>=5.9            # 크로스플랫폼 가용 RAM 측정 (Win/macOS/Linux)
+pyinstaller>=6.6       # 6.x : Python 3.12 지원 (구 5.13.2는 3.11 이하)
