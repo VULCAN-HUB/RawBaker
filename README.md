@@ -41,6 +41,8 @@ Windows 빌드: 가상환경 `venv`에 의존성을 설치하고 `pyinstaller bu
 
 공통 운영 기준은 **[VULCAN 프로젝트 기록 및 공개 정책 v0.3](PUBLICATION_POLICY.md)**입니다. 사람·AI·자동화 도구는 작업 시작 전 확인해야 합니다.
 
+[AGENTS.md](AGENTS.md)와 [CLAUDE.md](CLAUDE.md)에서도 같은 정책을 참조합니다. 생성 시점에 관계없이 과거 자료의 재사용·재게시와 신규 자료에 적용하며, 등급 없는 내부 기록은 검토 필요로 취급합니다. 과거 자료 전체의 내용 감사를 완료했다는 의미는 아닙니다.
+
 - [게시 전 체크리스트](PUBLICATION_CHECKLIST.md)
 - [AI 및 자동화 행동 규칙](AI_AUTOMATION_RULES.md)
 - [비공개 보안 취약점 신고](SECURITY.md)
