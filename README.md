@@ -39,6 +39,12 @@ Windows 빌드: 가상환경 `venv`에 의존성을 설치하고 `pyinstaller bu
 
 ## 공개 범위
 
+공통 운영 기준은 **[VULCAN 프로젝트 기록 및 공개 정책 v0.3](PUBLICATION_POLICY.md)**입니다. 사람·AI·자동화 도구는 작업 시작 전 확인해야 합니다.
+
+- [게시 전 체크리스트](PUBLICATION_CHECKLIST.md)
+- [AI 및 자동화 행동 규칙](AI_AUTOMATION_RULES.md)
+- [비공개 보안 취약점 신고](SECURITY.md)
+
 프로그램 이름·코드·제작 목적·사용 AI 이름·사용 설명서·공식 GitHub/YouTube 브랜드 정보는 공개합니다. 개인 신원·연락처·주소·인증 정보·비공개 계정 정보·AI 스킬·프롬프트·작업 지시·대화·내부 작업 기록은 공개 자료에 포함하지 않습니다.
 
 ## 라이선스
