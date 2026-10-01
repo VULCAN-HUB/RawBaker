@@ -22,20 +22,23 @@ class ImageStep(ABC):
     def __repr__(self): return self.__class__.__name__
 
 
-def _to_rgb_f32(img: Image.Image) -> tuple[np.ndarray, str]:
-    """RGB float32 배열과 원본 모드 반환."""
-    return np.array(img.convert("RGB"), dtype=np.float32), img.mode
+def _to_rgb_f32(img: Image.Image) -> tuple[np.ndarray, Image.Image]:
+    """RGB 연산 버퍼와 알파를 복원할 원본 이미지 반환."""
+    return np.array(img.convert("RGB"), dtype=np.float32), img
 
 
-def _from_f32(arr: np.ndarray, mode: str) -> Image.Image:
+def _from_f32(arr: np.ndarray, original: Image.Image) -> Image.Image:
     out = Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8), "RGB")
-    return out if mode == "RGB" else out.convert(mode)
+    if "A" in original.getbands() or "transparency" in original.info:
+        out.putalpha(original.convert("RGBA").getchannel("A"))
+        return out
+    return out if original.mode == "RGB" else out.convert(original.mode)
 
 
 def _apply_lut(img: Image.Image, lut: np.ndarray) -> Image.Image:
     """256-entry uint8 LUT를 각 채널에 적용."""
     arr = np.array(img.convert("RGB"), dtype=np.uint8)
-    return _from_f32(lut[arr].astype(np.float32), img.mode)
+    return _from_f32(lut[arr].astype(np.float32), img)
 
 
 # ─────────────────────────────────────────────────────────

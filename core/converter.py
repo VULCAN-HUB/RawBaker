@@ -10,7 +10,6 @@ converter.py — 파일 입출력 + 파이프라인 실행을 담당하는 진�
 """
 import io
 import os
-import threading
 import uuid
 from pathlib import Path
 from typing import Callable, Optional
@@ -23,6 +22,7 @@ from core.image_io import (
     RAW_EXTS as _IO_RAW_EXTS, AUTO_BRIGHT_FACTOR,
 )
 from core.pipeline import build_pipeline, ImagePipeline
+from core.safe_output import write_output
 
 RAW_EXTENSIONS    = {".cr2", ".cr3", ".nef", ".arw", ".dng", ".orf", ".rw2", ".raf"}
 NORMAL_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tiff", ".tif", ".webp", ".bmp"}
@@ -44,7 +44,6 @@ FORMAT_SAVE_KWARGS = {
 }
 
 _MAX_PATH       = 260
-_collision_lock = threading.Lock()
 
 
 # ─────────────────────────────────────────────────────────
@@ -122,22 +121,6 @@ def _sanitize_suffix(suffix: str) -> str:
     return cleaned
 
 
-def _ensure_no_collision(out_path: str, ext: str) -> str:
-    """같은 이름 파일이 있으면 _1, _2 … 접미사 추가 (스레드 안전)."""
-    with _collision_lock:
-        if not os.path.exists(out_path):
-            open(out_path, 'wb').close()   # 슬롯 예약
-            return out_path
-        base = str(Path(out_path).with_suffix(""))
-        counter = 1
-        while True:
-            candidate = f"{base}_{counter}{ext}"
-            if not os.path.exists(candidate):
-                open(candidate, 'wb').close()
-                return candidate
-            counter += 1
-
-
 # ─────────────────────────────────────────────────────────
 # 공개 API
 # ─────────────────────────────────────────────────────────
@@ -163,6 +146,7 @@ def convert_file(
     crop_rect_portrait=None,
     dpi: int = 0,
     auto_bright: bool = True,
+    protected_inputs: tuple = (),
 ) -> Optional[str]:
     """
     단일 파일을 변환합니다. 성공 시 출력 경로 반환.
@@ -258,21 +242,12 @@ def convert_file(
     if target_format == "JPEG" and dpi and dpi > 0 and exif_mode != "remove_all":
         img_bytes = force_dpi(img_bytes, dpi)
 
-    # --- 출력 경로 (충돌 처리 모드 적용) ---
-    if on_collision == "overwrite":
-        out_path = candidate            # 기존 파일 덮어쓰기
-    elif on_collision == "skip":
-        out_path = candidate            # 사전 검사에서 없음을 확인함
-    else:                               # rename: 충돌 시 번호 붙이기 (스레드 안전 슬롯 예약)
-        out_path = _ensure_no_collision(candidate, out_ext)
-
-    if len(out_path) > _MAX_PATH:
-        raise ConvertError(f"출력 경로가 너무 깁니다 ({len(out_path)}자).")
-
     try:
-        with open(out_path, "wb") as f:
-            f.write(img_bytes)
-    except OSError as e:
+        out_path = write_output(
+            img_bytes, candidate, mode=on_collision,
+            protected_inputs=(src_path, *protected_inputs), max_path=_MAX_PATH,
+        )
+    except (OSError, ValueError) as e:
         raise ConvertError(f"파일 저장 실패: {e}") from e
 
     if progress_cb:

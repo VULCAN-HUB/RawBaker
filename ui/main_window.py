@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+from copy import deepcopy
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Optional
@@ -120,8 +121,9 @@ class ConvertWorker(QThread):
     def __init__(self, jobs: list, opts: dict):
         """jobs: [{"path": str, "adjustments": dict|None}, ...]"""
         super().__init__()
-        self._jobs  = jobs
-        self._opts  = opts
+        self._jobs  = deepcopy(jobs)
+        self._protected_inputs = tuple(job["path"] for job in self._jobs)
+        self._opts  = deepcopy(opts)
         self._abort = False
 
     def abort(self):
@@ -158,19 +160,12 @@ class ConvertWorker(QThread):
             crop_rect_portrait=opts.get("crop_rect_portrait"),
             dpi=opts.get("dpi", 0),
             auto_bright=opts.get("auto_bright", True),
+            protected_inputs=self._protected_inputs,
         )
 
         if out_path is None:
             return None   # 충돌 건너뜀
 
-        # 변환 성공 시에만 원본 삭제 (출력 파일과 다른 경로일 때만)
-        if opts.get("delete_source") and not self._abort:
-            try:
-                if os.path.abspath(out_path) != os.path.abspath(src_path) \
-                        and os.path.exists(src_path):
-                    os.remove(src_path)
-            except OSError:
-                pass  # 삭제 실패는 변환 성공에 영향을 주지 않음
         return out_path
 
     def run(self):
@@ -430,7 +425,7 @@ class PreviewWidget(QLabel):
 # ---------------------------------------------------------------------------
 
 class MainWindow(QMainWindow):
-    def __init__(self, lang: dict, lang_key: str):
+    def __init__(self, lang: dict, lang_key: str, *, project_storage_root=None, offer_recovery=True):
         super().__init__()
         self._lang      = lang
         self._lang_key  = lang_key
@@ -455,6 +450,8 @@ class MainWindow(QMainWindow):
         self._apply_dark_theme()
         self._restore_settings()
         self._center_window()
+        from ui.project_controller import ProjectController
+        self.projects = ProjectController(self, project_storage_root, offer_recovery)
 
     # -----------------------------------------------------------------------
     # UI 구성
@@ -859,7 +856,10 @@ class MainWindow(QMainWindow):
         QTimer.singleShot(2500, self._update_status_label)
         QTimer.singleShot(2500, lambda: self.status_label.setStyleSheet("color:#888888; font-size:12px;"))
 
-    def _reset(self):
+    def _reset(self, checked=False, *, project_switch=False):
+        if not project_switch and hasattr(self, "projects"):
+            if self._converting or not self.projects.confirm_leave():
+                return
         if self._converting and self._worker:
             self._cancelled = True          # 리셋에 의한 중단 → 폴더 자동 열기 생략
             self._worker.abort()
@@ -876,8 +876,12 @@ class MainWindow(QMainWindow):
 
         self._adj_timer.stop()
         self._exit_edit_mode(restore_preview=False)   # 리셋 시 미리보기 복원 생략
-        self.file_list.clear()
-        self._items.clear()
+        self.file_list.blockSignals(True)
+        try:
+            self.file_list.clear()
+            self._items.clear()
+        finally:
+            self.file_list.blockSignals(False)
         self._adj_base_cache.clear()
         self.progress_bar.reset()
         self.preview.cancel()              # 진행 중인 로더 취소
@@ -885,6 +889,9 @@ class MainWindow(QMainWindow):
         self.crop_editor.clear_image()
         self._center_stack.setCurrentIndex(0)
         self._update_status_label()
+
+        if not project_switch and hasattr(self, "projects"):
+            self.projects.reset()
 
     # -----------------------------------------------------------------------
     # 보정 모드
@@ -1249,6 +1256,9 @@ class MainWindow(QMainWindow):
         self.convert_btn.setEnabled(True)
 
     def _start_convert(self):
+        if hasattr(self, "projects") and self.projects.busy:
+            QMessageBox.information(self, "프로젝트 저장 중", "프로젝트 저장이 끝난 뒤 변환하세요.")
+            return
         if not self._items:
             QMessageBox.information(self, self._lang["app_title"], self._lang["no_files"])
             return
@@ -1256,8 +1266,11 @@ class MainWindow(QMainWindow):
             return
 
         out_folder    = self.options.get_output_folder()
+        if hasattr(self, "projects"):
+            out_folder = self.projects.export_folder(out_folder)
+            if out_folder is None:
+                return
         cw, ch        = self.options.get_custom_size()
-        delete_source = self.options.get_delete_source()
         out_format    = self.options.get_format()
         resize_mode   = self.options.get_resize_mode()
 
@@ -1289,17 +1302,6 @@ class MainWindow(QMainWindow):
             if reply != QMessageBox.Yes:
                 return
 
-        # 원본 삭제는 되돌릴 수 없으므로 명시적 확인
-        if delete_source:
-            reply = QMessageBox.warning(
-                self, "원본 삭제 확인",
-                f"변환에 성공한 {len(self._items)}개 파일의 원본이 "
-                "복구 불가능하게 삭제됩니다.\n\n계속하시겠습니까?",
-                QMessageBox.Yes | QMessageBox.No, QMessageBox.No
-            )
-            if reply != QMessageBox.Yes:
-                return
-
         opts = {
             "out_dir":       out_folder,
             "out_format":    out_format,
@@ -1308,7 +1310,6 @@ class MainWindow(QMainWindow):
             "custom_w":      cw,
             "custom_h":      ch,
             "exif_mode":     self.options.get_exif_mode(),
-            "delete_source": delete_source,
             "on_collision":  self.options.get_collision_mode(),
             "rename_suffix": self.options.get_rename_suffix(),
             "crop_enabled":  self.options.get_crop_enabled(),
@@ -1342,7 +1343,6 @@ class MainWindow(QMainWindow):
 
         self._converting = True
         self._cancelled  = False
-        self._delete_source_active = delete_source   # 완료 후 리스트 자동 정리에 사용
 
         # 변환 버튼을 '취소' 모드로 전환 (진행 중 중단 가능)
         self.convert_btn.setText("■  취소")
@@ -1412,18 +1412,6 @@ class MainWindow(QMainWindow):
         self.reset_btn.setEnabled(True)
         cancelled = getattr(self, "_cancelled", False)
 
-        # 원본 삭제 옵션이 켜져 있었으면, 원본이 사라진 완료 항목을 목록에서 자동 제거
-        # (실패 항목은 사용자가 확인할 수 있게 그대로 둔다)
-        was_delete = getattr(self, "_delete_source_active", False)
-        if was_delete:
-            self._delete_source_active = False
-            done_items = [
-                i for i in self._items
-                if isinstance(i, FileItem) and getattr(i, "status", "") == "done"
-            ]
-            if done_items:
-                self._remove_items(done_items)
-
         selected = self.file_list.selectedItems()
         self.edit_btn.setEnabled(bool(selected and isinstance(selected[0], FileItem)))
         self.progress_bar.set_progress(100, "")
@@ -1435,15 +1423,9 @@ class MainWindow(QMainWindow):
             QTimer.singleShot(3000, lambda: self.status_label.setStyleSheet("color:#888888; font-size:12px;"))
             return
 
-        # 완료 메시지 — 원본 삭제/실패/건너뜀을 명확히 구분 (UX #2·#3)
+        # 완료 메시지 — 실패/건너뜀을 구분
         skipped = getattr(self, "_skip_count", 0)
-        if was_delete:
-            if errors > 0:
-                msg = f"완료 {done}개(원본 삭제됨) · 실패 {errors}개(원본 유지됨)"
-            else:
-                msg = f"완료 {done}개 — 원본이 삭제되었습니다"
-        else:
-            msg = self._lang["convert_done_msg"].format(done=done, total=self._total)
+        msg = self._lang["convert_done_msg"].format(done=done, total=self._total)
         if skipped > 0:
             msg += f" · 건너뜀 {skipped}개"
         color = "#27AE60" if errors == 0 else "#E74C3C"
@@ -1494,13 +1476,18 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         """창 종료 시 진행 중인 모든 워커 스레드를 안전하게 정리."""
+        if hasattr(self, "projects") and not self.projects.confirm_leave():
+            event.ignore()
+            return
         self._save_ui_settings()   # 종료 시점의 옵션도 기억
 
         # 변환 워커: 중단 신호 후 종료 대기 (in-flight 파일은 마무리 → 손상 방지)
         if self._worker and self._worker.isRunning():
             self._cancelled = True
             self._worker.abort()
-            self._worker.wait(10000)
+            if not self._worker.wait(10000):
+                event.ignore()
+                return
 
         # 미리보기·보정 로더 스레드 종료 대기
         threads = [self._adj_base_loader, self._adj_preview_worker,
@@ -1509,9 +1496,13 @@ class MainWindow(QMainWindow):
         for th in threads:
             try:
                 if th is not None and th.isRunning():
-                    th.wait(3000)
+                    if not th.wait(3000):
+                        event.ignore()
+                        return
             except RuntimeError:
                 pass  # 이미 삭제된 객체
+        if hasattr(self, "projects"):
+            self.projects.shutdown()
         super().closeEvent(event)
 
     def _update_status_label(self):

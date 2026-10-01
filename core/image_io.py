@@ -1,8 +1,7 @@
 """
 image_io.py — 이미지 로드 공통 유틸.
 
-미리보기와 변환 출력이 동일한 베이스 이미지를 사용하도록
-한 곳에서 관리한다.
+기존 8비트 엔진의 읽기를 관리한다. 새 선형 엔진은 render_io.py를 사용한다.
 
 RAW 로드 우선순위:
   1) RAW 내 임베딩 JPEG  — 카메라 색보정·픽처스타일 적용 상태
@@ -124,7 +123,7 @@ def open_raw_full(path: str, bright: float = AUTO_BRIGHT_FACTOR) -> Image.Image:
       open_raw_full() : rawpy 풀 디코딩만 수행  (느림, 출력 품질 최우선)
 
     보장:
-      - 카메라 센서의 원본 해상도 그대로 출력
+      - LibRaw가 제공하는 전체 디코딩 해상도로 출력(half_size=False)
       - use_camera_wb=True 로 화이트밸런스 보존
       - output_color=sRGB 로 ICC 변환 없이 색공간 통일
       - bright(기본 AUTO_BRIGHT_FACTOR)로 밝기 보정. 1.0이면 부스트 없음.
@@ -148,20 +147,13 @@ def open_raw_full(path: str, bright: float = AUTO_BRIGHT_FACTOR) -> Image.Image:
 
 
 # ─────────────────────────────────────────────────────────
-# RAW 로드 — 미리보기 전용 (출력과 색 일치 보장)
+# RAW 로드 — 기존 엔진의 축소 미리보기
 # ─────────────────────────────────────────────────────────
 
 def open_raw_preview(path: str, bright: float = AUTO_BRIGHT_FACTOR) -> Image.Image:
     """
-    RAW 파일을 미리보기용으로 로드 — **출력(open_raw_full)과 동일한 색**.
-
-    라이트룸·캡처원 같은 전문 프로그램과 동일한 원리:
-      임베딩 JPEG(카메라 색감)이 아니라 RAW 엔진(rawpy)으로 직접 디모자이킹한
-      결과를 보여준다. 따라서 화면에서 본 색 = 변환 출력 색 (WYSIWYG).
-
-    open_raw_full() 과 색 파라미터(use_camera_wb·no_auto_bright·sRGB·bright)는 완전히
-    동일하고, 속도를 위해 half_size=True 로 절반 해상도만 디코딩한다.
-    절반 해상도는 화면 표시·보정 미리보기에 충분하며 색은 풀 디코딩과 같다.
+    RAW 파일을 절반 해상도로 디코딩한다. 색 파라미터는 출력과 공유하지만
+    디모자이킹 해상도와 자동 밝기 계산이 달라 픽셀·색의 완전 일치를 보장하지 않는다.
     bright(기본 AUTO_BRIGHT_FACTOR)로 밝기 보정 — 출력과 같은 값을 써야 색이 일치한다.
     """
     import rawpy
@@ -169,7 +161,7 @@ def open_raw_preview(path: str, bright: float = AUTO_BRIGHT_FACTOR) -> Image.Ima
         with rawpy.imread(path) as raw:
             rgb = raw.postprocess(
                 use_camera_wb=True,
-                half_size=True,          # 미리보기 속도용 — 색은 풀 디코딩과 동일
+                half_size=True,          # 속도용 축소 디코딩; 풀 해상도와 픽셀 동일하지 않음
                 no_auto_bright=False,
                 bright=bright,
                 output_bps=8,

@@ -294,22 +294,6 @@ class OptionsPanel(QWidget):
         self.collision_combo.setToolTip("출력 폴더에 같은 이름 파일이 이미 있을 때의 처리 방식")
         c_inner.addWidget(self.collision_combo)
 
-        # ── 변환 후 처리 ───────────────────────────
-        post_group = self._group("변환 후 처리")
-        p_inner = QVBoxLayout(post_group)
-        self.delete_src_cb = QCheckBox("변환 후 원본 파일 삭제")
-        self.delete_src_cb.setChecked(False)
-        self.delete_src_cb.setStyleSheet("color:#CCCCCC; font-size:12px;")
-        self.delete_src_cb.setToolTip(
-            "변환에 성공한 파일의 원본을 삭제합니다.\n"
-            "⚠ 삭제된 원본은 복구할 수 없습니다 (휴지통 아님). 신중히 사용하세요."
-        )
-        p_inner.addWidget(self.delete_src_cb)
-        warn = QLabel("⚠ 원본은 복구 불가하게 삭제됩니다")
-        warn.setStyleSheet("color:#B85C00; font-size:10px;")
-        warn.setWordWrap(True)
-        p_inner.addWidget(warn)
-
         # ── 언어 ──────────────────────────────────
         lang_group = self._group(self._lang["language"])
         l_inner = QHBoxLayout(lang_group)
@@ -319,14 +303,14 @@ class OptionsPanel(QWidget):
         l_inner.addWidget(self.lang_combo)
 
         for w in (fmt_group, bright_group, resize_group, crop_group, dpi_group,
-                  exif_group, out_group, name_group, col_group, post_group, lang_group):
+                  exif_group, out_group, name_group, col_group, lang_group):
             root.addWidget(w)
         root.addStretch()
 
         # 모드별 표시 그룹 — 출력 설정 / 크기 조절 버튼으로 전환(패널 길어짐 방지)
         self._size_groups   = [resize_group, crop_group, dpi_group]
         self._output_groups = [fmt_group, bright_group, exif_group, out_group,
-                               name_group, col_group, post_group, lang_group]
+                               name_group, col_group, lang_group]
         self.set_mode("output")
 
         self._scroll.setWidget(_content)
@@ -366,9 +350,6 @@ class OptionsPanel(QWidget):
         if self.same_src_cb.isChecked():
             return ""
         return self.folder_edit.text().strip()
-
-    def get_delete_source(self) -> bool:
-        return self.delete_src_cb.isChecked()
 
     def get_collision_mode(self) -> str:
         idx = self.collision_combo.currentIndex()
@@ -456,8 +437,7 @@ class OptionsPanel(QWidget):
     # ── 설정 저장/복원 (마지막 사용 옵션 기억) ──────────
 
     def get_settings(self) -> dict:
-        # ※ delete_source(원본 삭제)는 파괴적 옵션이라 세션 간에 기억하지 않는다
-        #   (재실행 시 항상 꺼진 상태로 시작 — 사용자가 잊고 원본을 지우는 사고 방지)
+        # 원본 삭제 옵션은 폐기했으며 저장하지 않는다.
         return {
             "format":        self.get_format(),
             "resize":        self.get_resize_mode(),
@@ -491,8 +471,6 @@ class OptionsPanel(QWidget):
                 self.exif_remove_gps.setChecked(True)
             elif exif == "keep":
                 self.exif_keep.setChecked(True)
-            if "delete_source" in s:
-                self.delete_src_cb.setChecked(bool(s["delete_source"]))
             mode = s.get("collision")
             for i, (_, m) in enumerate(self._collision_modes):
                 if m == mode:

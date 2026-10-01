@@ -49,6 +49,15 @@ def _install_excepthook():
 
 def main():
     _install_excepthook()
+    from PyQt5.QtCore import Qt, QTimer
+    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
+    smoke_root = None
+    if "--smoke-test" in sys.argv:
+        import tempfile
+        smoke_root = tempfile.TemporaryDirectory(prefix="rawbaker-smoke-")
+        QSettings.setDefaultFormat(QSettings.IniFormat)
+        QSettings.setPath(QSettings.IniFormat, QSettings.UserScope, smoke_root.name)
     app = QApplication(sys.argv)
     app.setApplicationName("RawBaker")
     app.setOrganizationName("RawBaker")
@@ -56,6 +65,11 @@ def main():
     # Load saved language
     settings = QSettings("RawBaker", "RawBaker")
     lang_key = settings.value("language", "ko")
+    if smoke_root and "--smoke-language" in sys.argv:
+        requested = sys.argv[sys.argv.index("--smoke-language")+1]
+        if requested not in ("ko", "en"):
+            raise ValueError("Smoke language must be ko or en")
+        lang_key = requested
     lang = load_lang(lang_key)
 
     # App icon
@@ -64,16 +78,44 @@ def main():
         app.setWindowIcon(QIcon(str(icon_path)))
 
     # Font fallback for Rajdhani (header logo)
-    from PyQt5.QtGui import QFontDatabase
+    from PyQt5.QtGui import QFontDatabase, QFont
     font_dir = Path(BASE_DIR) / "assets"
-    for ffile in font_dir.glob("*.ttf"):
+    for ffile in list(font_dir.rglob("*.ttf")) + list(font_dir.rglob("*.otf")):
         QFontDatabase.addApplicationFont(str(ffile))
+    app.setFont(QFont("Noto Sans CJK KR", 10))
 
-    from ui.main_window import MainWindow
-    win = MainWindow(lang, lang_key)
+    if "--legacy" in sys.argv:
+        from ui.main_window import MainWindow
+        win = MainWindow(lang, lang_key)
+    else:
+        from ui.editor_window import EditorWindow as StudioWindow
+        win = StudioWindow(lang, lang_key, storage_root=Path(smoke_root.name)/"sessions" if smoke_root else None,
+                           offer_recovery=not bool(smoke_root))
     win.show()
+    if smoke_root:
+        # Deterministic startup check for packaged builds, with isolated user state.
+        output = Path(sys.argv[sys.argv.index("--smoke-test")+1])
+        def smoke_complete():
+            result = {"started": True, "title": win.windowTitle(), "qt": "PyQt5", "frozen": bool(getattr(sys, "frozen", False))}
+            result["language"] = lang_key
+            try:
+                from core.studio_smoke import run_smoke
+                result["checks"] = run_smoke(Path(smoke_root.name)/"verification")
+                if hasattr(win, 'empty_document'):
+                    assert not win.empty_document.isHidden()
+                    assert not win.command_actions['export_current'][0].isEnabled()
+                    assert all(not spin.isEnabled() for spin in win.layer_spins.values())
+                    result["checks"]["empty_editor_readiness"] = True
+                win.grab().save(str(output.with_suffix(".png")))
+            except Exception as error:
+                result["error"] = str(error)
+            output.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+            win.close(); app.exit(1 if "error" in result else 0)
+        QTimer.singleShot(1200, smoke_complete)
 
-    sys.exit(app.exec_())
+    code = app.exec_()
+    if smoke_root: smoke_root.cleanup()
+    sys.exit(code)
 
 
 if __name__ == "__main__":

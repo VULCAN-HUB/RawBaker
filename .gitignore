@@ -1,31 +1,18 @@
-# 가상환경
-venv/
-venv_mac/
-venv_broken_39/
-
-# 빌드 산출물 (릴리스로 배포 — 리포에 커밋하지 않음)
+venv*/
+__pycache__/
+*.pyc
 build/
 dist/
-*.exe
-*.app/
 _version_info_generated.txt
 
-# 파이썬 캐시
-__pycache__/
-*.py[cod]
-.pytest_cache/
-
-# 런타임/테스트 생성물
-presets/
-test_output*/
-*.zip
-
-# 테스트 픽스처 이미지 — 공개 리포에 포함하지 않음
-# (일부에 GPS EXIF 위치 데이터 포함 → 공개 시 제외. 로컬 테스트용 fixture)
-test_images/
-
-# OS/에디터
-.DS_Store
-Thumbs.db
-.vscode/
-.idea/
+.env
+.env.*
+!.env.example
+AGENTS.md
+SKILL.md
+.codex/
+.claude/
+private/
+work/
+outputs/
+*.log
