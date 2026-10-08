@@ -82,7 +82,7 @@ def main():
     font_dir = Path(BASE_DIR) / "assets"
     for ffile in list(font_dir.rglob("*.ttf")) + list(font_dir.rglob("*.otf")):
         QFontDatabase.addApplicationFont(str(ffile))
-    app.setFont(QFont("Noto Sans CJK KR", 10))
+    app.setFont(QFont("Pretendard", 10))
 
     if "--legacy" in sys.argv:
         from ui.main_window import MainWindow
@@ -107,6 +107,26 @@ def main():
                     assert all(not spin.isEnabled() for spin in win.layer_spins.values())
                     result["checks"]["empty_editor_readiness"] = True
                 win.grab().save(str(output.with_suffix(".png")))
+                from ui.brand import BrandAbout
+                from ui.app_update import current_version, build_target
+                from core.app_update import Version
+                about = BrandAbout(win)
+                about.show(); app.processEvents()
+                assert about.updates.controller.state == 'idle'
+                assert about.updates.controller.apply() is False
+                from version import VERSION_TUPLE
+                assert Version(current_version()).base == VERSION_TUPLE[:3]
+                if getattr(sys, 'frozen', False) and sys.platform == 'win32':
+                    assert build_target() == ('windows', 'x64', 'portable-zip')
+                result['checks']['about_update_idle_and_package'] = True
+                assert 'Pretendard' in QFontDatabase().families() and 'Rajdhani' in QFontDatabase().families()
+                result['checks']['brand_fonts'] = True
+                about.licenses.click()
+                assert 'SIL OPEN FONT LICENSE' in about.license_text.toPlainText()
+                result['checks']['bundled_font_licenses'] = True
+                about.pages.setCurrentIndex(0)
+                about.grab().save(str(output.with_name(output.stem + '-about.png')))
+                about.close()
             except Exception as error:
                 result["error"] = str(error)
             output.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")

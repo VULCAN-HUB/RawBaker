@@ -2,7 +2,7 @@
 from pathlib import Path
 ASSETS = (Path(__file__).resolve().parent.parent / "assets/ui").as_posix()
 STYLE = """
-QWidget { background:#252527; color:#ceced1; font-family:"Malgun Gothic"; font-size:11px; }
+QWidget { background:#252527; color:#ceced1; font-family:"Pretendard"; font-size:11px; }
 QMainWindow { background:#202022; }
 QLabel { background:transparent; }
 QMenuBar { background:#1c1c1e; padding:2px; }
@@ -65,3 +65,16 @@ QListWidget#layers::item:selected { background:#48434f; border-color:#80778f; }
 QListWidget#layers::item:selected:hover { background:#514b59; }
 """
 STYLE += f"QCheckBox::indicator:checked {{ image:url({ASSETS}/check.svg); background:#aaaab8; }}"
+
+# Brand accents do not alter the canvas, document fonts or saved preferences.
+STYLE += """
+QWidget#brandHeader { border-bottom:1px solid #48484c; }
+QPushButton[primary="true"] { background:#D35400; color:white; }
+QToolBar#editor-tools QToolButton:checked { background:#61391f; border-color:#D35400; }
+QToolButton:focus,QPushButton:focus { border:1px solid #D35400; }
+QLineEdit:focus,QSpinBox:focus,QDoubleSpinBox:focus,QTextEdit:focus { border-color:#D35400; }
+QListWidget#layers::item:selected { background:#523827; border-color:#D35400; }
+QListWidget#layers::item:selected:hover { background:#62422c; }
+QSlider::handle:horizontal { background:#ed8d4e; }
+QTabBar::tab:selected { border-bottom:2px solid #D35400; }
+"""

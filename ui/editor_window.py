@@ -57,6 +57,13 @@ class WorkspaceStack(QStackedWidget):
 
 class EditorWindow(EditorAdvanced,EditorGroups,StudioWindow):
 
+    def menuBar(self):
+        return self._brand_menu if hasattr(self,'_brand_menu') else super().menuBar()
+
+    def show_about(self):
+        from ui.brand import BrandAbout
+        BrandAbout(self).exec_()
+
     def _build(self):
 
         self.setStyleSheet(STYLE)
@@ -144,6 +151,15 @@ class EditorWindow(EditorAdvanced,EditorGroups,StudioWindow):
         self._create_tools()
 
         self._create_menus()
+        from ui.brand import brand_header
+        menu = self.menuBar()
+        self._brand_menu = menu
+        menu_container = QWidget()
+        menu_layout = QVBoxLayout(menu_container)
+        menu_layout.setContentsMargins(0,0,0,0); menu_layout.setSpacing(0)
+        self.brand_header = brand_header(self,self.show_about)
+        menu_layout.addWidget(self.brand_header); menu_layout.addWidget(menu)
+        self.setMenuWidget(menu_container)
         from ui.empty_canvas import EmptyCanvas
         self.empty_document = EmptyCanvas(self.design_canvas,
             self.tr_text('새 작업을 시작하세요', 'Start a new project'),
@@ -308,7 +324,7 @@ class EditorWindow(EditorAdvanced,EditorGroups,StudioWindow):
 
         help_menu = mb.addMenu(self.tr_text('도움말','Help'))
 
-        self._action(help_menu,localize('RawBaker 정보', self),lambda:QMessageBox.information(self,'RawBaker',localize('RawBaker\nUnknown · @unknown8563\n문서 편집기 개발판', self)))
+        self._action(help_menu,localize('RawBaker 정보', self),self.show_about)
 
         self._action(help_menu,'한국어 / English',self.change_language)
 

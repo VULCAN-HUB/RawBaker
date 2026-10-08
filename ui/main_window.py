@@ -538,54 +538,9 @@ class MainWindow(QMainWindow):
         self._mode_btns["output"].setChecked(True)
         self._crop_orient = "l"
 
-    def _make_header(self) -> QWidget:
-        w = QWidget()
-        w.setFixedHeight(44)
-        w.setStyleSheet("background:#111111; border-bottom:1px solid #222222;")
-        layout = QHBoxLayout(w)
-        layout.setContentsMargins(12, 4, 12, 4)
-
-        logo_path = Path(BASE_DIR) / "assets" / "logo.png"
-        if logo_path.exists():
-            pm = QPixmap(str(logo_path)).scaled(36, 36, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-            lbl = QLabel(); lbl.setPixmap(pm); lbl.setFixedSize(40, 40)
-            layout.addWidget(lbl)
-            layout.addSpacing(6)
-
-        raw_lbl = QLabel("Raw")
-        raw_lbl.setFont(QFont("Rajdhani", 22, QFont.Bold))
-        raw_lbl.setStyleSheet("color:#FFFFFF;")
-        baker_lbl = QLabel("Baker")
-        baker_lbl.setFont(QFont("Rajdhani", 22, QFont.Bold))
-        baker_lbl.setStyleSheet("color:#D35400;")
-        tagline = QLabel("Digital Kiln | Processing & Perfection")
-        tagline.setStyleSheet("color:#555555; font-size:11px;")
-
-        layout.addWidget(raw_lbl)
-        layout.addWidget(baker_lbl)
-        layout.addSpacing(16)
-        layout.addWidget(tagline)
-        layout.addStretch()
-
-        credit_lbl = QLabel("PROJECT 02  ·  Unknown")
-        credit_lbl.setStyleSheet("color:#3A3A3A; font-size:11px; letter-spacing:1px;")
-        layout.addWidget(credit_lbl)
-        layout.addSpacing(8)
-
-        about_btn = QPushButton("?")
-        about_btn.setFixedSize(22, 22)
-        about_btn.setToolTip("About RawBaker")
-        about_btn.setStyleSheet("""
-            QPushButton {
-                background:transparent; color:#444444;
-                border:1px solid #333333; border-radius:11px;
-                font-size:12px; font-weight:bold;
-            }
-            QPushButton:hover { color:#D35400; border-color:#D35400; }
-        """)
-        about_btn.clicked.connect(self._show_about)
-        layout.addWidget(about_btn)
-        return w
+    def _make_header(self):
+        from ui.brand import brand_header
+        return brand_header(self,self._show_about)
 
     def _make_left_panel(self) -> QWidget:
         panel = QWidget()
@@ -1680,89 +1635,5 @@ class MainWindow(QMainWindow):
         )
 
     def _show_about(self):
-        dlg = QDialog(self)
-        dlg.setWindowTitle("About RawBaker")
-        dlg.setFixedSize(360, 345)
-        dlg.setStyleSheet("background:#111111; color:#CCCCCC;")
-
-        layout = QVBoxLayout(dlg)
-        layout.setSpacing(0)
-        layout.setContentsMargins(0, 0, 0, 0)
-
-        banner = QWidget()
-        banner.setFixedHeight(90)
-        banner.setStyleSheet(
-            "background: qlineargradient(x1:0,y1:0,x2:1,y2:0,"
-            "stop:0 #C0390B, stop:1 #D35400);"
-        )
-        b_lay = QHBoxLayout(banner)
-        b_lay.setContentsMargins(20, 0, 20, 0)
-
-        logo_path = Path(BASE_DIR) / "assets" / "logo.png"
-        if logo_path.exists():
-            pm = QPixmap(str(logo_path)).scaled(60, 60, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-            ll = QLabel(); ll.setPixmap(pm)
-            b_lay.addWidget(ll); b_lay.addSpacing(12)
-
-        nc = QVBoxLayout()
-        an = QLabel("RawBaker"); an.setFont(QFont("Rajdhani", 22, QFont.Bold))
-        an.setStyleSheet("color:#FFFFFF;")
-        sn = QLabel("Digital Kiln"); sn.setStyleSheet("color:rgba(255,255,255,0.6); font-size:11px;")
-        nc.addWidget(an); nc.addWidget(sn)
-        b_lay.addLayout(nc); b_lay.addStretch()
-        layout.addWidget(banner)
-
-        body = QWidget(); body.setStyleSheet("background:#111111;")
-        b2 = QVBoxLayout(body)
-        b2.setContentsMargins(28, 24, 28, 16); b2.setSpacing(10)
-
-        def info_row(lbl, val, vc="#CCCCCC"):
-            h = QHBoxLayout()
-            l = QLabel(lbl); l.setStyleSheet("color:#555555; font-size:11px;"); l.setFixedWidth(70)
-            v = QLabel(val); v.setStyleSheet(f"color:{vc}; font-size:12px; font-weight:bold;")
-            h.addWidget(l); h.addWidget(v); h.addStretch()
-            return h
-
-        def yt_row():
-            """유튜브 링크 행 — 클릭하면 브라우저에서 열림."""
-            import webbrowser
-            h = QHBoxLayout()
-            lbl = QLabel("유튜브")
-            lbl.setStyleSheet("color:#555555; font-size:11px;")
-            lbl.setFixedWidth(70)
-            link = QLabel(
-                '<a href="https://www.youtube.com/@unknown8563" '
-                'style="color:#FF4444; text-decoration:none; font-size:12px; font-weight:bold;">'
-                '▶  @unknown8563</a>'
-            )
-            link.setOpenExternalLinks(True)
-            link.setToolTip("https://www.youtube.com/@unknown8563")
-            h.addWidget(lbl); h.addWidget(link); h.addStretch()
-            return h
-
-        b2.addLayout(info_row("프로젝트", "PROJECT 02", "#D35400"))
-        b2.addLayout(info_row("제작",    version.COMPANY))
-        b2.addLayout(info_row("연도",    version.YEAR))
-        b2.addLayout(info_row("버전",    version.VERSION_DISPLAY))
-        b2.addLayout(yt_row())
-        b2.addLayout(info_row("엔진",    "rawpy · Pillow · OpenCV"))
-        b2.addLayout(info_row("플랫폼",  platform_utils.platform_label()))
-        b2.addSpacing(8)
-        desc = QLabel("RAW 파일 및 일반 이미지를\n원하는 형식으로 변환하는 포터블 프로그램.")
-        desc.setStyleSheet("color:#555555; font-size:11px;"); desc.setWordWrap(True)
-        b2.addWidget(desc); b2.addStretch()
-        layout.addWidget(body, stretch=1)
-
-        btn_box = QDialogButtonBox(QDialogButtonBox.Ok)
-        btn_box.setStyleSheet(
-            "QPushButton { background:#D35400; color:#fff; border:none;"
-            " border-radius:4px; padding:6px 24px; font-size:12px; }"
-            "QPushButton:hover { background:#E67E22; }"
-        )
-        btn_box.accepted.connect(dlg.accept)
-        cb = QWidget(); cb.setStyleSheet("background:#0D0D0D; border-top:1px solid #1E1E1E;")
-        cl = QHBoxLayout(cb); cl.setContentsMargins(16, 8, 16, 8)
-        cl.addStretch(); cl.addWidget(btn_box)
-        layout.addWidget(cb)
-
-        dlg.exec_()
+        from ui.brand import BrandAbout
+        BrandAbout(self).exec_()

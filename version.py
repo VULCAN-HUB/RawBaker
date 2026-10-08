@@ -10,9 +10,9 @@ About 다이얼로그 · 창 제목 · exe 버전 리소스가 모두 이 파일
 """
 
 APP_NAME        = "RawBaker"
-VERSION_TUPLE   = (0, 25, 0, 0)          # exe 숫자 버전 (정수 4-튜플만 허용)
+VERSION_TUPLE   = (0, 27, 0, 0)          # exe 숫자 버전 (정수 4-튜플만 허용)
 IS_BETA         = True
-VERSION_DISPLAY = "BETA Ver-0.25 Editor Preview" # 사람이 보는 표기 (About·exe FileVersion 문자열)
+VERSION_DISPLAY = "BETA Ver-0.27 Editor Preview" # 사람이 보는 표기 (About·exe FileVersion 문자열)
 COMPANY         = "Unknown"
 YEAR            = "2026"
 COPYRIGHT       = "© 2026 Unknown"

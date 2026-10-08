@@ -1,10 +1,10 @@
 # RawBaker
 
-**테스트 중 · v0.25-editor-preview · 정식 출시 전**
+**테스트 중 · v0.27.0-editor-preview · 정식 출시 전**
 
 사진 여러 장의 일괄 변환부터 개별 사진 보정과 레이어 디자인까지 한곳에서 작업하는 로컬 데스크톱 앱입니다.
 
-**[다운로드](https://github.com/VULCAN-HUB/RawBaker/releases/tag/v0.25-editor-preview)** · **[사용 안내](DEVICE-TEST.md)**
+**[다운로드](https://github.com/VULCAN-HUB/RawBaker/releases/tag/v0.27.0-editor-preview)** · **[사용 안내](DEVICE-TEST.md)**
 
 제작: **Unknown** · [홈페이지](https://vulcan-hub.github.io/) · [YouTube](https://www.youtube.com/@unknown8563)
 
@@ -25,7 +25,7 @@
 
 ## 사용법
 
-Windows: `RawBaker-Editor-0.25-Windows-x64.zip`을 풀고 `RawBaker.exe`를 실행합니다. Python 설치는 필요하지 않습니다.
+Windows: `RawBaker-Editor-0.27-Windows-x64.zip`을 풀고 `RawBaker.exe`를 실행합니다. Python 설치는 필요하지 않습니다.
 
 1. 사진을 가져옵니다. 여러 사진은 일괄 보정·출력할 수 있습니다.
 2. 보정 화면에서 밝기·색상 등을 조절합니다.
@@ -50,3 +50,9 @@ Windows 빌드: 가상환경 `venv`에 의존성을 설치하고 `pyinstaller bu
 [보안 취약점 신고](SECURITY.md) · [게시 전 체크리스트](PUBLICATION_CHECKLIST.md) · [AI 및 자동화 행동 규칙](AI_AUTOMATION_RULES.md)
 
 [공개 정책: VULCAN-0.3](https://github.com/VULCAN-HUB/RawBaker/blob/main/PUBLICATION_POLICY.md)
+
+## 앱 정보와 업데이트
+
+상단 `?`에서 버전, 공식 YouTube·Discord, 글꼴 라이선스와 업데이트를 확인합니다. 확인만으로 다운로드하지 않습니다. Windows x64 ZIP 업데이트는 다운로드 후 SHA-256을 검증합니다. 자동 설치·재시작은 아직 지원하지 않습니다. 작업을 저장하고 앱을 종료한 뒤 검증된 ZIP을 새 폴더에 풀어 실행하세요. 기존 프로젝트·사진·설정은 삭제하지 마세요.
+
+[업데이트 배포 형식](UPDATE-FORMAT.md) · [Discord](https://discord.gg/fmwEzmCzPz)
