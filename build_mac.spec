@@ -33,6 +33,9 @@ a = Analysis(
     cipher=block_cipher, noarchive=False,
 )
 
+# Exclude interpreter caches from bundled data; Python modules are in PYZ.
+a.datas = [entry for entry in a.datas if '__pycache__' not in entry[0].replace('\\', '/').split('/') and not entry[0].endswith(('.pyc', '.pyo'))]
+
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
 # macOS 는 onefile 대신 onedir + BUNDLE(.app) 권장 (Gatekeeper·서명·실행 안정성)
