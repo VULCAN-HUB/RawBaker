@@ -4,7 +4,7 @@
 
 ## Windows
 
-RawBaker-Editor-0.27-Windows-x64.zip 전체를 풀고 RawBaker.exe를 실행합니다. Python 설치는 필요하지 않습니다.
+RawBaker-Editor-Beta-Ver.0.27.0-Windows-x64.zip 전체를 풀고 RawBaker.exe를 실행합니다. Python 설치는 필요하지 않습니다.
 자동 검사: 압축을 푼 폴더에서 PowerShell을 열고 아래 명령을 실행합니다.
 
 ```powershell
@@ -17,7 +17,7 @@ RawBaker-Editor-0.27-Windows-x64.zip 전체를 풀고 RawBaker.exe를 실행합�
 
 ## macOS
 
-아직 검증된 .app/.dmg는 없습니다. RawBaker-Editor-0.27-source.zip을 풀고 Python 3.12가 설치된 실제 Mac의 터미널에서 실행합니다.
+아직 검증된 .app/.dmg는 없습니다. RawBaker-Editor-Beta-Ver.0.27.0-source.zip을 풀고 Python 3.12가 설치된 실제 Mac의 터미널에서 실행합니다.
 
 ```bash
 bash build_mac.sh
